@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: mcp_db
+      POSTGRES_USER: mcp_user
+      POSTGRES_PASSWORD: mcp_pass
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mcp_user -d mcp_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    profiles: [prod, dev, test]
+
+volumes:
+  pgdata:

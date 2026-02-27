@@ -1,0 +1,21 @@
+{
+  "name": "ctpp-mcp-db",
+  "version": "1.0.0",
+  "description": "PostgreSQL migrations and seed data for the CTPP MCP geography lookup",
+  "type": "module",
+  "scripts": {
+    "migrate:up": "node-pg-migrate up --config-file database.json",
+    "migrate:down": "node-pg-migrate down --config-file database.json",
+    "seed": "npx tsx seed/seed.ts"
+  },
+  "dependencies": {
+    "node-pg-migrate": "^7.0.0",
+    "pg": "^8.11.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/pg": "^8.11.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.3.0"
+  }
+}
