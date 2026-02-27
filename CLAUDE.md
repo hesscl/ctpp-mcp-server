@@ -107,11 +107,26 @@ npm run seed
 ```
 CTPP_API_KEY=...        # Required for all CTPP API calls
 DATABASE_URL=postgresql://mcp_user:mcp_pass@localhost:5432/mcp_db
+MCP_TRANSPORT=http      # Optional; enables HTTP transport (default: stdio)
+PORT=3000               # Optional; HTTP port when MCP_TRANSPORT=http (default: 3000)
+MCP_AUTH_TOKEN=...      # Recommended for HTTP transport; Bearer token auth (see Security)
 DEBUG_LOGS=true         # Enables console output (suppressed by default in index.ts)
 ```
 
+## Security (HTTP Transport)
+
+When `MCP_TRANSPORT=http`, set `MCP_AUTH_TOKEN` — the server checks every request for `Authorization: Bearer <token>`. Without it the endpoint is unauthenticated and any client with network access can call tools and exhaust your CTPP API quota.
+
+Other hardened defaults (all in `index.ts`):
+- Request body capped at **1 MB** (HTTP 413 if exceeded)
+- Session map capped at **100** concurrent sessions (HTTP 503 if exceeded)
+- Startup `stderr` warning emitted when `MCP_AUTH_TOKEN` is unset
+
+The stdio transport (default) runs as a local subprocess and requires no token.
+
 ## MCP Client Configuration
 
+**Local (stdio) — default:**
 ```json
 {
   "mcpServers": {
@@ -122,6 +137,29 @@ DEBUG_LOGS=true         # Enables console output (suppressed by default in index
     }
   }
 }
+```
+
+**Remote (HTTP) — set `MCP_TRANSPORT=http`:**
+```json
+{
+  "mcpServers": {
+    "ctpp-mcp": {
+      "type": "streamable-http",
+      "url": "http://your-host:3000/mcp",
+      "headers": { "Authorization": "Bearer your_secret_token" }
+    }
+  }
+}
+```
+
+Run the HTTP server with Docker Compose:
+```bash
+CTPP_API_KEY=your_key MCP_AUTH_TOKEN=your_secret_token docker compose --profile prod up
+```
+
+Or locally:
+```bash
+MCP_TRANSPORT=http PORT=3000 CTPP_API_KEY=your_key MCP_AUTH_TOKEN=your_secret_token node mcp-server/dist/index.js
 ```
 
 ## Key Differences from Census MCP

@@ -2,18 +2,32 @@ import { z } from "zod";
 import { BaseTool, CallToolResult } from "./BaseTool.js";
 import { ctppFetch } from "../apiClient.js";
 
+// Matches: 'county', 'county:037', 'county:*', 'state:06', 'tract:*', etc.
+const GEO_UNIT = /^(state|county|place|tract)(:[0-9*]+)?$/;
+// Matches one or more space-separated GEO_UNIT values.
+const GEO_LIST = /^(state|county|place|tract)(:[0-9*]+)?( (state|county|place|tract)(:[0-9*]+)?)*$/;
+
 const schema = z.object({
   year: z
     .union([z.literal(2000), z.literal(2010), z.literal(2016), z.literal(2021)])
     .describe("Dataset year. One of: 2000, 2010, 2016, 2021."),
   get: z
     .string()
+    .max(500, "get parameter must be 500 characters or fewer")
+    .regex(
+      /^[A-Za-z0-9_,()\s]+$/,
+      "get parameter must contain only letters, digits, underscores, commas, parentheses, and spaces",
+    )
     .describe(
       "Comma-separated variable names to retrieve, e.g. 'B101100_e1,B101100_m1'. " +
         "Use get-table-variables to discover variable names for a group.",
     ),
   forGeo: z
     .string()
+    .regex(
+      GEO_UNIT,
+      "forGeo must be '<level>' or '<level>:<fips>' (e.g. 'county:033', 'county:*', 'state:06')",
+    )
     .describe(
       "Geography level and optional FIPS filter for the 'for' parameter. " +
         "Format: '<level>:<fips>' or '<level>:*' for all. " +
@@ -21,6 +35,10 @@ const schema = z.object({
     ),
   inGeo: z
     .string()
+    .regex(
+      GEO_LIST,
+      "inGeo must be space-separated '<level>:<fips>' values (e.g. 'state:06' or 'state:06 county:037')",
+    )
     .optional()
     .describe(
       "Parent geography constraint for the 'in' parameter. " +
@@ -29,6 +47,10 @@ const schema = z.object({
     ),
   dForGeo: z
     .string()
+    .regex(
+      GEO_UNIT,
+      "dForGeo must be '<level>' or '<level>:<fips>' (e.g. 'county:033', 'county:*')",
+    )
     .optional()
     .describe(
       "Destination geography for flow/O-D tables (maps to 'd-for' API param). " +
@@ -36,6 +58,10 @@ const schema = z.object({
     ),
   dInGeo: z
     .string()
+    .regex(
+      GEO_LIST,
+      "dInGeo must be space-separated '<level>:<fips>' values",
+    )
     .optional()
     .describe(
       "Destination parent geography for flow/O-D tables (maps to 'd-in' API param). " +

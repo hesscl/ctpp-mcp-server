@@ -10,6 +10,8 @@ const schema = z.object({
     ),
   keyword: z
     .string()
+    .max(200, "Keyword must be 200 characters or fewer")
+    .regex(/^[^\x00-\x1f\x7f]*$/, "Keyword must not contain control characters")
     .optional()
     .describe("Optional keyword to filter groups by name or description."),
   page: z.number().int().positive().max(10_000).optional().default(1),

@@ -32,7 +32,7 @@ export async function ctppFetch<T>(
 
   if (!response.ok) {
     const text = await response.text().catch(() => "");
-    throw new Error(`CTPP API error ${response.status}: ${text}`);
+    throw new Error(`CTPP API error ${response.status}: ${text.slice(0, 200)}`);
   }
 
   return response.json() as Promise<T>;

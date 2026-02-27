@@ -176,7 +176,12 @@ npm run inspect        # 🔭 MCP Inspector for interactive tool testing
 | `CTPP_API_KEY` | Yes (API tools) | API key for ctppdata.transportation.org |
 | `DATABASE_URL` | Yes (`resolve-geography-fips`) | PostgreSQL connection string |
 | `CTPP_API_URL` | No | Override API base URL (e.g., dev/beta endpoint) |
+| `MCP_TRANSPORT` | No | Set to `http` to enable HTTP transport (default: `stdio`) |
+| `PORT` | No | HTTP port when `MCP_TRANSPORT=http` (default: `3000`) |
+| `MCP_AUTH_TOKEN` | No* | Bearer token for HTTP transport. **Strongly recommended when using `MCP_TRANSPORT=http`** — without it the endpoint is unauthenticated and anyone with network access can use your CTPP API key. |
 | `DEBUG_LOGS` | No | Set to `true` to enable `console.log` (suppressed by default — stdout carries MCP protocol) |
+
+> **Security note:** When running the HTTP transport, always set `MCP_AUTH_TOKEN` and keep the port off the public internet (or behind a reverse proxy with TLS). The stdio transport (default) is inherently local and does not require a token.
 
 ### Interactive Testing
 

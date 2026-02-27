@@ -16,5 +16,21 @@ services:
       retries: 5
     profiles: [prod, dev, test]
 
+  mcp-server:
+    build:
+      context: ./mcp-server
+    environment:
+      MCP_TRANSPORT: http
+      PORT: "3000"
+      CTPP_API_KEY: "${CTPP_API_KEY}"
+      MCP_AUTH_TOKEN: "${MCP_AUTH_TOKEN:-}"
+      DATABASE_URL: "postgresql://mcp_user:mcp_pass@db:5432/mcp_db"
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles: [prod, dev]
+
 volumes:
   pgdata:
