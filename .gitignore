@@ -1,0 +1,19 @@
+# Environment & secrets
+.env
+.env.*
+*.txt
+!**/*.test.txt
+
+# Node
+node_modules/
+dist/
+*.js.map
+
+# Build artifacts
+*.tsbuildinfo
+
+# OS
+.DS_Store
+
+# Logs
+*.log
