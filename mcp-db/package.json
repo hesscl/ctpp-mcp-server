@@ -2,6 +2,7 @@
   "name": "ctpp-mcp-db",
   "version": "1.0.0",
   "description": "PostgreSQL migrations and seed data for the CTPP MCP geography lookup",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "migrate:up": "node-pg-migrate up --config-file database.json",
