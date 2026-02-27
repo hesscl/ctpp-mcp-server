@@ -4,7 +4,7 @@
 
 An [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server for the [Census Transportation Planning Products (CTPP) API](https://ctppdata.transportation.org). Plug commuting and journey-to-work data directly into Claude Desktop, Claude Code, or any MCP-compatible AI client.
 
-[![License: CC0-1.0](https://img.shields.io/badge/License-CC0_1.0-lightgrey.svg)](https://creativecommons.org/publicdomain/zero/1.0/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
 
@@ -215,6 +215,17 @@ docker compose --profile dev down -v     # stop + delete data volume
 
 ---
 
+## 📋 Changelog
+
+### v1.1.0
+
+- Switch license from CC0 to MIT
+- Add HTTP transport support (`MCP_TRANSPORT=http`) with Bearer token auth, 1 MB body cap, and 100-session limit
+- Harden input validation across all tools
+- Bump `@types/node` to `^22` to match Dockerfile runtime
+
+---
+
 ## 📄 License
 
-This project is released under the [Creative Commons Zero v1.0 Universal](LICENSE) license — public domain, no restrictions, do whatever you want with it. 🎉
+This project is released under the [MIT License](LICENSE).
