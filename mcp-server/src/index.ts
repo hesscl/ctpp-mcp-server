@@ -24,7 +24,7 @@ const MAX_SESSIONS = 100;
 
 function createMcpServer(): Server {
   const server = new Server(
-    { name: "ctpp-mcp", version: "1.1.0" },
+    { name: "ctpp-mcp", version: "1.2.0" },
     { capabilities: { tools: {} } },
   );
 

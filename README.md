@@ -28,7 +28,7 @@ The CTPP dataset is produced by AASHTO from US Census ACS data. It captures deta
 | 🌍 `get-group-geographies` | Get available geography levels for a table |
 | 📊 `fetch-ctpp-data` | Fetch statistical data with geography and variable filters |
 | 📍 `resolve-geography-fips` | Convert place names → FIPS codes via fuzzy matching |
-| 💻 `generate-code` | Export a `fetch-ctpp-data` query as a self-contained R or Python script |
+| 💻 `generate-code` | Export a `fetch-ctpp-data` query as a self-contained R or Python script; optionally annotates variables with labels (`annotate=true`) and generates a pagination loop to fetch all records (`fetchAll=true`) |
 
 ### 📅 Dataset Years
 
@@ -228,6 +228,8 @@ docker compose --profile dev down -v     # stop + delete data volume
 ### v1.2.0
 
 - Add `generate-code` tool — exports any `fetch-ctpp-data` query as a self-contained R (`httr2` + `dplyr`) or Python (`requests` + `pandas`) script
+  - `annotate=true`: fetches variable labels from the CTPP API and embeds them as comments in the generated script
+  - `fetchAll=true`: generates a pagination loop (page size 1000) that fetches all records instead of a single page
 - Update install instructions to be platform-agnostic (Windows PowerShell notes, `node` instead of `bash` in MCP client config)
 
 ### v1.1.0
