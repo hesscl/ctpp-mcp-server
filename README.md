@@ -78,9 +78,33 @@ cd mcp-server && npm install && npm run build
 
 Output lands in `mcp-server/dist/`.
 
-### 2. Configure your MCP client 🤖
+### 2. Set your API key
+
+Copy `.env.example` to `.env` and fill in your key:
+
+```bash
+cp .env.example .env
+# then edit .env and set CTPP_API_KEY=your_api_key_here
+```
+
+### 3. Configure your MCP client 🤖
 
 Add this to your MCP client config (e.g. `claude_desktop_config.json`, Cursor settings, or equivalent):
+
+**Unix/Mac** — use `mcp-connect.sh`, which auto-loads `.env` and auto-builds `dist/` if needed:
+
+```json
+{
+  "mcpServers": {
+    "ctpp-mcp": {
+      "command": "bash",
+      "args": ["/absolute/path/to/ctpp-mcp-server/scripts/mcp-connect.sh"]
+    }
+  }
+}
+```
+
+**Windows / without `.env`** — pass the key directly in the config:
 
 ```json
 {
@@ -95,8 +119,6 @@ Add this to your MCP client config (e.g. `claude_desktop_config.json`, Cursor se
   }
 }
 ```
-
-Use the absolute path to `dist/index.js` from step 1. On Unix/Mac you can alternatively point at `scripts/mcp-connect.sh` (using `"command": "bash"`), which will auto-build `dist/` if it's missing.
 
 ---
 
@@ -150,6 +172,10 @@ npm run generate-geo-data  # 🗺️ Refresh bundled geography data from TIGERwe
 
 ```bash
 cd mcp-server
+# If you have a .env in the project root:
+source ../.env && npm run inspect
+
+# Or pass the key inline:
 CTPP_API_KEY=your_key npm run inspect
 ```
 
