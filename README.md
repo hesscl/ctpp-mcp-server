@@ -27,7 +27,7 @@ The CTPP dataset is produced by AASHTO from US Census ACS data. It captures deta
 | 🔬 `get-table-variables` | Get variable names (estimates + MOE) for a specific table |
 | 🌍 `get-group-geographies` | Get available geography levels for a table |
 | 📊 `fetch-ctpp-data` | Fetch statistical data with geography and variable filters |
-| 📍 `resolve-geography-fips` | Convert place names → FIPS codes via fuzzy matching |
+| 📍 `resolve-geography-fips` | Convert place names → FIPS codes via fuzzy matching (no DB required) |
 | 💻 `generate-code` | Export a `fetch-ctpp-data` query as a self-contained R or Python script; optionally annotates variables with labels (`annotate=true`) and generates a pagination loop to fetch all records (`fetchAll=true`) |
 
 ### 📅 Dataset Years
@@ -47,19 +47,19 @@ The CTPP dataset is produced by AASHTO from US Census ACS data. It captures deta
 ctpp-mcp-server/
 ├── mcp-server/          # 📦 TypeScript MCP server (stdio transport)
 │   └── src/
-│       ├── index.ts     # Server entry point
-│       ├── apiClient.ts # ctppFetch() with X-API-Key header auth
-│       ├── db.ts        # Lazy PostgreSQL pool for geography DB
-│       └── tools/       # One file per tool + BaseTool base class
-├── mcp-db/              # 🐘 PostgreSQL migrations and seed data
-│   ├── migrations/      # node-pg-migrate schema
-│   └── seed/seed.ts     # Populates states + counties from TIGERweb
+│       ├── index.ts         # Server entry point
+│       ├── apiClient.ts     # ctppFetch() with X-API-Key header auth
+│       ├── geo.ts           # In-memory geography search (trigram similarity)
+│       ├── data/
+│       │   └── geographies.ts  # Bundled states + counties (3,287 records)
+│       └── tools/           # One file per tool + BaseTool base class
 ├── scripts/
-│   └── mcp-connect.sh   # 🔌 MCP client entry point (auto-builds if needed)
-└── docker-compose.yml   # 🐳 Runs postgres:16
+│   ├── mcp-connect.sh       # 🔌 MCP client entry point (auto-builds if needed)
+│   └── generate-geo-data.ts # Refreshes geographies.ts from TIGERweb
+└── docker-compose.yml       # 🐳 HTTP transport only (no database)
 ```
 
-The server runs over **stdio** — your MCP client launches it as a subprocess. The only external service is PostgreSQL (for geography lookups); all CTPP data queries go directly to the CTPP REST API.
+The server runs over **stdio** — your MCP client launches it as a subprocess. Geography lookups are resolved in-memory from bundled data; no database is required. All CTPP data queries go directly to the CTPP REST API.
 
 ---
 
@@ -68,59 +68,17 @@ The server runs over **stdio** — your MCP client launches it as a subprocess. 
 ### Prerequisites
 
 - **Node.js** 18+
-- **Docker** + **Docker Compose**
 - **CTPP API key** — request one at [ctppdata.transportation.org](https://ctppdata.transportation.org)
 
-### 1. Install dependencies
+### 1. Install and build
 
 ```bash
-cd mcp-server && npm install
-cd ../mcp-db && npm install
-```
-
-### 2. Start the database 🐘
-
-```bash
-docker compose --profile dev up -d db
-```
-
-Starts PostgreSQL 16 on port 5432 (`mcp_db` / `mcp_user` / `mcp_pass`). Wait a few seconds, then verify:
-
-```bash
-docker compose ps
-```
-
-### 3. Run migrations
-
-```bash
-cd mcp-db
-DATABASE_URL=postgresql://mcp_user:mcp_pass@localhost:5432/mcp_db npm run migrate:up
-```
-
-> **Windows (PowerShell):** `$env:DATABASE_URL = "postgresql://mcp_user:mcp_pass@localhost:5432/mcp_db"; npm run migrate:up`
-
-Creates the `geographies` table and a GIN trigram index for fuzzy name matching.
-
-### 4. Seed geography data
-
-```bash
-DATABASE_URL=postgresql://mcp_user:mcp_pass@localhost:5432/mcp_db npm run seed
-```
-
-> **Windows (PowerShell):** `$env:DATABASE_URL = "postgresql://mcp_user:mcp_pass@localhost:5432/mcp_db"; npm run seed`
-
-Inserts all 50 states + DC + PR and ~3,200 counties from the Census TIGERweb REST API.
-
-### 5. Build the server
-
-```bash
-cd ../mcp-server
-npm run build
+cd mcp-server && npm install && npm run build
 ```
 
 Output lands in `mcp-server/dist/`.
 
-### 6. Configure your MCP client 🤖
+### 2. Configure your MCP client 🤖
 
 Add this to your MCP client config (e.g. `claude_desktop_config.json`, Cursor settings, or equivalent):
 
@@ -131,15 +89,14 @@ Add this to your MCP client config (e.g. `claude_desktop_config.json`, Cursor se
       "command": "node",
       "args": ["/absolute/path/to/ctpp-mcp-server/mcp-server/dist/index.js"],
       "env": {
-        "CTPP_API_KEY": "your_api_key_here",
-        "DATABASE_URL": "postgresql://mcp_user:mcp_pass@localhost:5432/mcp_db"
+        "CTPP_API_KEY": "your_api_key_here"
       }
     }
   }
 }
 ```
 
-Use the absolute path to `dist/index.js` from step 5. On Unix/Mac you can alternatively point at `scripts/mcp-connect.sh` (using `"command": "bash"`), which will auto-build `dist/` if it's missing.
+Use the absolute path to `dist/index.js` from step 1. On Unix/Mac you can alternatively point at `scripts/mcp-connect.sh` (using `"command": "bash"`), which will auto-build `dist/` if it's missing.
 
 ---
 
@@ -173,6 +130,7 @@ npm run lint           # 🔍 ESLint (typescript-eslint v8)
 npm run format         # ✨ Prettier (auto-fix)
 npm run format:check   # ✅ Prettier (CI check)
 npm run inspect        # 🔭 MCP Inspector for interactive tool testing
+npm run generate-geo-data  # 🗺️ Refresh bundled geography data from TIGERweb
 ```
 
 ### Environment Variables
@@ -180,7 +138,6 @@ npm run inspect        # 🔭 MCP Inspector for interactive tool testing
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `CTPP_API_KEY` | Yes (API tools) | API key for ctppdata.transportation.org |
-| `DATABASE_URL` | Yes (`resolve-geography-fips`) | PostgreSQL connection string |
 | `CTPP_API_URL` | No | Override API base URL (e.g., dev/beta endpoint) |
 | `MCP_TRANSPORT` | No | Set to `http` to enable HTTP transport (default: `stdio`) |
 | `PORT` | No | HTTP port when `MCP_TRANSPORT=http` (default: `3000`) |
@@ -193,37 +150,35 @@ npm run inspect        # 🔭 MCP Inspector for interactive tool testing
 
 ```bash
 cd mcp-server
-CTPP_API_KEY=your_key DATABASE_URL=postgresql://mcp_user:mcp_pass@localhost:5432/mcp_db npm run inspect
+CTPP_API_KEY=your_key npm run inspect
 ```
 
-> **Windows (PowerShell):** Set both variables with `$env:...` before running `npm run inspect`.
+> **Windows (PowerShell):** `$env:CTPP_API_KEY = "your_key"; npm run inspect`
 
 Opens a browser UI to call each tool and inspect inputs/outputs.
 
 ---
 
-## 🗃️ Database Migrations
+## 🗺️ Geography Data
+
+`resolve-geography-fips` uses a bundled dataset of all US states and ~3,200 counties, searched in-memory using trigram similarity (same algorithm as PostgreSQL's `pg_trgm`). No database is required.
+
+To refresh the bundled data from Census TIGERweb (e.g. after county boundary changes):
 
 ```bash
-cd mcp-db
-
-# Apply all pending migrations
-DATABASE_URL=... npm run migrate:up
-
-# Roll back the last migration
-DATABASE_URL=... npm run migrate:down
-```
-
-## 🛑 Stopping the Database
-
-```bash
-docker compose --profile dev down        # stop (keeps data volume)
-docker compose --profile dev down -v     # stop + delete data volume
+cd mcp-server && npm run generate-geo-data && npm run build
 ```
 
 ---
 
 ## 📋 Changelog
+
+### v1.3.0
+
+- Remove PostgreSQL / Docker dependency: `resolve-geography-fips` now uses a bundled dataset searched in-memory with a JS trigram similarity implementation (replicates `pg_trgm`)
+- Remove `mcp-db/` package, `docker-compose.yml` `db` service, and `pg` dependency from `mcp-server`
+- Add `scripts/generate-geo-data.ts` to refresh the bundled geography data from TIGERweb
+- Setup is now just `npm install && npm run build` — no database required
 
 ### v1.2.0
 

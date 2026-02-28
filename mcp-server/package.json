@@ -12,17 +12,16 @@
     "lint": "eslint src/ tests/",
     "format": "prettier --write src/ tests/",
     "format:check": "prettier --check src/ tests/",
-    "inspect": "npx @modelcontextprotocol/inspector dist/index.js"
+    "inspect": "npx @modelcontextprotocol/inspector dist/index.js",
+    "generate-geo-data": "npx tsx ../scripts/generate-geo-data.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "pg": "^8.11.0",
     "zod": "^3.22.0",
     "zod-to-json-schema": "^3.22.0"
   },
   "devDependencies": {
     "@types/node": "^22.19.13",
-    "@types/pg": "^8.11.0",
     "eslint": "^9.0.0",
     "prettier": "^3.0.0",
     "typescript": "^5.3.0",

@@ -1,21 +1,4 @@
 services:
-  db:
-    image: postgres:16
-    environment:
-      POSTGRES_DB: mcp_db
-      POSTGRES_USER: mcp_user
-      POSTGRES_PASSWORD: mcp_pass
-    ports:
-      - "5433:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U mcp_user -d mcp_db"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    profiles: [prod, dev, test]
-
   mcp-server:
     build:
       context: ./mcp-server
@@ -24,13 +7,6 @@ services:
       PORT: "3000"
       CTPP_API_KEY: "${CTPP_API_KEY}"
       MCP_AUTH_TOKEN: "${MCP_AUTH_TOKEN:-}"
-      DATABASE_URL: "postgresql://mcp_user:mcp_pass@db:5432/mcp_db"
     ports:
       - "3000:3000"
-    depends_on:
-      db:
-        condition: service_healthy
     profiles: [prod, dev]
-
-volumes:
-  pgdata:

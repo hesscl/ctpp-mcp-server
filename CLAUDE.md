@@ -8,14 +8,17 @@ MCP (Model Context Protocol) server for the [Census Transportation Planning Prod
 
 ## Architecture
 
-Two-package structure inside a Docker Compose project:
+Single-package structure; Docker Compose is only used for the optional HTTP transport:
 
 ```
 ctpp-mcp-server/
 ├── mcp-server/          # TypeScript MCP server (stdio transport)
-├── mcp-db/              # PostgreSQL migrations and seeding (geography lookup)
-├── scripts/             # mcp-connect.sh launcher + dev helpers
-└── docker-compose.yml   # profiles: prod, dev, test
+│   └── src/
+│       ├── geo.ts               # In-memory geography search (JS trigram similarity)
+│       ├── data/geographies.ts  # Bundled states + counties (3,287 records)
+│       └── tools/               # One file per tool + BaseTool base class
+├── scripts/             # mcp-connect.sh launcher + generate-geo-data.ts
+└── docker-compose.yml   # HTTP transport only (no database)
 ```
 
 ### mcp-server/
@@ -24,18 +27,22 @@ TypeScript package using `@modelcontextprotocol/sdk` with `StdioServerTransport`
 
 **MCP Tools:**
 
-| Tool | API/DB | Description |
+| Tool | Source | Description |
 |------|--------|-------------|
 | `list-table-groups` | CTPP API | Lists all CTPP table groups for a given year (`2010`, `2016`, `2021`) |
 | `get-table-variables` | CTPP API | Returns variable definitions (estimates + MOE columns) for a specific table |
 | `fetch-ctpp-data` | CTPP API | Fetches statistical data; handles both residence/workplace and flow (O-D) tables |
-| `resolve-geography-fips` | PostgreSQL | Converts place names to FIPS codes for use in `for`/`in` parameters |
+| `resolve-geography-fips` | In-memory | Converts place names to FIPS codes via JS trigram similarity over bundled geography data |
 
-The `BaseTool` class checks for `CTPP_API_KEY` and wraps errors. Tools that only use the local DB set `requiresApiKey = false`.
+The `BaseTool` class checks for `CTPP_API_KEY` and wraps errors. Tools with `requiresApiKey = false` work without an API key.
 
-### mcp-db/
+### Geography lookup (no database)
 
-PostgreSQL package with `node-pg-migrate` migrations and seeding scripts. Populates geography tables used by `resolve-geography-fips`. Uses `pg_trgm` trigram extension for fuzzy name matching (same pattern as Census MCP).
+`src/geo.ts` implements trigram similarity matching (replicating `pg_trgm`) over `src/data/geographies.ts`, a pre-built TypeScript file containing all US states and ~3,200 counties. Refresh it with:
+
+```bash
+cd mcp-server && npm run generate-geo-data
+```
 
 ## CTPP API Reference
 
@@ -96,17 +103,10 @@ npm run format:check
 npm run inspect        # @modelcontextprotocol/inspector
 ```
 
-Run from `mcp-db/`:
-```bash
-npm run migrate:up
-npm run seed
-```
-
 ## Environment Variables
 
 ```
 CTPP_API_KEY=...        # Required for all CTPP API calls
-DATABASE_URL=postgresql://mcp_user:mcp_pass@localhost:5432/mcp_db
 MCP_TRANSPORT=http      # Optional; enables HTTP transport (default: stdio)
 PORT=3000               # Optional; HTTP port when MCP_TRANSPORT=http (default: 3000)
 MCP_AUTH_TOKEN=...      # Recommended for HTTP transport; Bearer token auth (see Security)
