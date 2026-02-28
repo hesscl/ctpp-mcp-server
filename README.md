@@ -2,7 +2,7 @@
 
 > **Ask your AI assistant about commuting patterns, journey-to-work data, and transportation statistics — powered by the Census CTPP API.**
 
-An [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server for the [Census Transportation Planning Products (CTPP) API](https://ctppdata.transportation.org). Plug commuting and journey-to-work data directly into Claude Desktop, Claude Code, or any MCP-compatible AI client.
+An [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server for the [Census Transportation Planning Products (CTPP) API](https://ctppdata.transportation.org). Plug commuting and journey-to-work data directly into any MCP-compatible AI client. A `generate-code` tool exports any query as a self-contained R or Python script, so analyses are easy to share and reproduce outside of the AI client.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -28,6 +28,7 @@ The CTPP dataset is produced by AASHTO from US Census ACS data. It captures deta
 | 🌍 `get-group-geographies` | Get available geography levels for a table |
 | 📊 `fetch-ctpp-data` | Fetch statistical data with geography and variable filters |
 | 📍 `resolve-geography-fips` | Convert place names → FIPS codes via fuzzy matching |
+| 💻 `generate-code` | Export a `fetch-ctpp-data` query as a self-contained R or Python script |
 
 ### 📅 Dataset Years
 
@@ -96,6 +97,8 @@ cd mcp-db
 DATABASE_URL=postgresql://mcp_user:mcp_pass@localhost:5432/mcp_db npm run migrate:up
 ```
 
+> **Windows (PowerShell):** `$env:DATABASE_URL = "postgresql://mcp_user:mcp_pass@localhost:5432/mcp_db"; npm run migrate:up`
+
 Creates the `geographies` table and a GIN trigram index for fuzzy name matching.
 
 ### 4. Seed geography data
@@ -103,6 +106,8 @@ Creates the `geographies` table and a GIN trigram index for fuzzy name matching.
 ```bash
 DATABASE_URL=postgresql://mcp_user:mcp_pass@localhost:5432/mcp_db npm run seed
 ```
+
+> **Windows (PowerShell):** `$env:DATABASE_URL = "postgresql://mcp_user:mcp_pass@localhost:5432/mcp_db"; npm run seed`
 
 Inserts all 50 states + DC + PR and ~3,200 counties from the Census TIGERweb REST API.
 
@@ -117,14 +122,14 @@ Output lands in `mcp-server/dist/`.
 
 ### 6. Configure your MCP client 🤖
 
-Add this to your `claude_desktop_config.json` or Claude Code MCP settings:
+Add this to your MCP client config (e.g. `claude_desktop_config.json`, Cursor settings, or equivalent):
 
 ```json
 {
   "mcpServers": {
     "ctpp-mcp": {
-      "command": "bash",
-      "args": ["/absolute/path/to/ctpp-mcp-server/scripts/mcp-connect.sh"],
+      "command": "node",
+      "args": ["/absolute/path/to/ctpp-mcp-server/mcp-server/dist/index.js"],
       "env": {
         "CTPP_API_KEY": "your_api_key_here",
         "DATABASE_URL": "postgresql://mcp_user:mcp_pass@localhost:5432/mcp_db"
@@ -134,7 +139,7 @@ Add this to your `claude_desktop_config.json` or Claude Code MCP settings:
 }
 ```
 
-The `mcp-connect.sh` script auto-builds `dist/` if it's missing.
+Use the absolute path to `dist/index.js` from step 5. On Unix/Mac you can alternatively point at `scripts/mcp-connect.sh` (using `"command": "bash"`), which will auto-build `dist/` if it's missing.
 
 ---
 
@@ -146,6 +151,7 @@ Find commute mode share for King County, WA in 2021:
 2. 🔬 **`get-table-variables`** `groupId="B202105", year=2021` → discovers variables like `B202105_e1`
 3. 📍 **`resolve-geography-fips`** `name="King County, Washington"` → `forGeo="county:033", inGeo="state:53"`
 4. 📊 **`fetch-ctpp-data`** `year=2021, get="B202105_e1,B202105_m1", forGeo="county:033", inGeo="state:53"`
+5. 💻 **`generate-code`** `language="r", year=2021, get="B202105_e1,B202105_m1", forGeo="county:033", inGeo="state:53"` → runnable `httr2` script
 
 For flow (O-D) tables, add destination params:
 
@@ -190,6 +196,8 @@ cd mcp-server
 CTPP_API_KEY=your_key DATABASE_URL=postgresql://mcp_user:mcp_pass@localhost:5432/mcp_db npm run inspect
 ```
 
+> **Windows (PowerShell):** Set both variables with `$env:...` before running `npm run inspect`.
+
 Opens a browser UI to call each tool and inspect inputs/outputs.
 
 ---
@@ -216,6 +224,11 @@ docker compose --profile dev down -v     # stop + delete data volume
 ---
 
 ## 📋 Changelog
+
+### v1.2.0
+
+- Add `generate-code` tool — exports any `fetch-ctpp-data` query as a self-contained R (`httr2` + `dplyr`) or Python (`requests` + `pandas`) script
+- Update install instructions to be platform-agnostic (Windows PowerShell notes, `node` instead of `bash` in MCP client config)
 
 ### v1.1.0
 
