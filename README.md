@@ -44,7 +44,7 @@ The CTPP dataset is produced by AASHTO from US Census ACS data. It captures deta
 ## 🏗️ Architecture
 
 ```
-ctpp-mcp-server/
+ctpp-mcp/
 ├── mcp-server/          # 📦 TypeScript MCP server (stdio transport)
 │   └── src/
 │       ├── index.ts         # Server entry point
@@ -98,7 +98,7 @@ Add this to your MCP client config (e.g. `claude_desktop_config.json`, Cursor se
   "mcpServers": {
     "ctpp-mcp": {
       "command": "bash",
-      "args": ["/absolute/path/to/ctpp-mcp-server/scripts/mcp-connect.sh"]
+      "args": ["/absolute/path/to/ctpp-mcp/scripts/mcp-connect.sh"]
     }
   }
 }
@@ -111,7 +111,7 @@ Add this to your MCP client config (e.g. `claude_desktop_config.json`, Cursor se
   "mcpServers": {
     "ctpp-mcp": {
       "command": "node",
-      "args": ["/absolute/path/to/ctpp-mcp-server/mcp-server/dist/index.js"],
+      "args": ["/absolute/path/to/ctpp-mcp/mcp-server/dist/index.js"],
       "env": {
         "CTPP_API_KEY": "your_api_key_here"
       }

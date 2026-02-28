@@ -11,7 +11,7 @@ MCP (Model Context Protocol) server for the [Census Transportation Planning Prod
 Single-package structure; Docker Compose is only used for the optional HTTP transport:
 
 ```
-ctpp-mcp-server/
+ctpp-mcp/
 ├── mcp-server/          # TypeScript MCP server (stdio transport)
 │   └── src/
 │       ├── geo.ts               # In-memory geography search (JS trigram similarity)
@@ -132,7 +132,7 @@ The stdio transport (default) runs as a local subprocess and requires no token.
   "mcpServers": {
     "ctpp-mcp": {
       "command": "bash",
-      "args": ["/path/to/ctpp-mcp-server/scripts/mcp-connect.sh"],
+      "args": ["/path/to/ctpp-mcp/scripts/mcp-connect.sh"],
       "env": { "CTPP_API_KEY": "your_api_key" }
     }
   }
